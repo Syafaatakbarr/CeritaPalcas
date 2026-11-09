@@ -29,15 +29,20 @@ jobs:
         run: |
           shopt -s nullglob
           for file in assets/activities/mt-prau/*.HEIC assets/activities/mt-prau/*.heic; do
-            output="${file%.*}.JPG"
-            heif-convert -q 88 "$file" "$output"
+            output="${file%.*}.jpg"
+            if heif-convert "$file" "$output"; then
+              echo "Converted: $file -> $output"
+            else
+              rm -f "$output"
+              echo "::warning::Could not convert $file; continuing with remaining photos."
+            fi
           done
 
       - name: Commit converted photos
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/activities/mt-prau/*.JPG
+          git add assets/activities/mt-prau/*.jpg
           if ! git diff --cached --quiet; then
             git commit -m "Convert Prau activity photos to JPG"
             git push
