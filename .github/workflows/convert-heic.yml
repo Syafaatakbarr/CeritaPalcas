@@ -18,30 +18,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install FFmpeg
+      - name: Install HEIC decoder
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install pillow pillow-heif
 
-      - name: Convert HEIC photos to JPG
+      - name: Convert full-resolution HEIC photos to JPG
         run: |
-          shopt -s nullglob
-          converted=()
-          for file in assets/activities/mt-prau/*.HEIC assets/activities/mt-prau/*.heic; do
-            output="${file%.*}.jpg"
-            if ffmpeg -y -loglevel error -i "$file" -frames:v 1 -q:v 2 "$output"; then
-              converted+=("$output")
-              echo "Converted: $file -> $output"
-            else
-              rm -f "$output"
-              echo "::warning::Could not convert $file; continuing with remaining photos."
-            fi
-          done
-          if [ "${#converted[@]}" -eq 0 ]; then
-            echo "No HEIC photos could be converted."
-            exit 1
-          fi
-          printf '%s\n' "${converted[@]}" > /tmp/converted-photos.txt
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          from pillow_heif import register_heif_opener
+
+          register_heif_opener()
+          folder = Path("assets/activities/mt-prau")
+          converted = []
+          for source in sorted(list(folder.glob("*.HEIC")) + list(folder.glob("*.heic"))):
+              target = source.with_suffix(".jpg")
+              with Image.open(source) as image:
+                  image = image.convert("RGB")
+                  print(f"Converting {source.name}: {image.width}x{image.height}")
+                  image.save(target, "JPEG", quality=92, optimize=True, progressive=True)
+              print(f"Created {target.name}: {target.stat().st_size} bytes")
+              converted.append(target)
+
+          if not converted:
+              raise SystemExit("No HEIC files found to convert")
+          Path("/tmp/converted-photos.txt").write_text(
+              "".join(f"{path}\n" for path in converted)
+          )
+          PY
 
       - name: Commit converted photos
         run: |
@@ -50,5 +56,5 @@ jobs:
           while IFS= read -r file; do
             git add -- "$file"
           done < /tmp/converted-photos.txt
-          git commit -m "Convert Prau activity photos to JPG"
+          git commit -m "Reconvert Prau photos at full resolution"
           git push
