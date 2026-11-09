@@ -1,0 +1,44 @@
+name: Convert activity HEIC photos to JPG
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/activities/mt-prau/**"
+      - ".github/workflows/convert-heic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install HEIC converter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libheif-examples
+
+      - name: Convert HEIC photos to JPG
+        run: |
+          shopt -s nullglob
+          for file in assets/activities/mt-prau/*.HEIC assets/activities/mt-prau/*.heic; do
+            output="${file%.*}.JPG"
+            heif-convert -q 88 "$file" "$output"
+          done
+
+      - name: Commit converted photos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/activities/mt-prau/*.JPG
+          if ! git diff --cached --quiet; then
+            git commit -m "Convert Prau activity photos to JPG"
+            git push
+          fi
