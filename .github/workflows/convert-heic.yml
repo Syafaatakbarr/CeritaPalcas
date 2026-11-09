@@ -17,33 +17,38 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install HEIC converter
+      - name: Install FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y libheif-examples
+          sudo apt-get install -y ffmpeg
 
       - name: Convert HEIC photos to JPG
         run: |
           shopt -s nullglob
+          converted=()
           for file in assets/activities/mt-prau/*.HEIC assets/activities/mt-prau/*.heic; do
             output="${file%.*}.jpg"
-            if heif-convert "$file" "$output"; then
+            if ffmpeg -y -loglevel error -i "$file" -frames:v 1 -q:v 2 "$output"; then
+              converted+=("$output")
               echo "Converted: $file -> $output"
             else
               rm -f "$output"
               echo "::warning::Could not convert $file; continuing with remaining photos."
             fi
           done
+          if [ "${#converted[@]}" -eq 0 ]; then
+            echo "No HEIC photos could be converted."
+            exit 1
+          fi
+          printf '%s\n' "${converted[@]}" > /tmp/converted-photos.txt
 
       - name: Commit converted photos
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/activities/mt-prau/*.jpg
-          if ! git diff --cached --quiet; then
-            git commit -m "Convert Prau activity photos to JPG"
-            git push
-          fi
+          while IFS= read -r file; do
+            git add -- "$file"
+          done < /tmp/converted-photos.txt
+          git commit -m "Convert Prau activity photos to JPG"
+          git push
