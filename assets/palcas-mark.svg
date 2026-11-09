@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="t d">
+<title id="t">PALCAS mountain mark</title><desc id="d">Dark green circular mountain emblem.</desc>
+<g fill="none" stroke="#173b25" stroke-linecap="round" stroke-linejoin="round">
+<path d="M20 30 A48 48 0 0 1 99 25" stroke-width="7"/>
+<path d="M103 34 A48 48 0 0 1 92 96" stroke-width="7"/>
+<path d="M84 103 A48 48 0 0 1 24 91" stroke-width="7"/>
+<path d="M17 79 A48 48 0 0 1 17 49" stroke-width="5"/>
+<path d="M19 38 A48 48 0 0 1 30 22" stroke-width="4"/>
+</g>
+<path d="M23 70 L47 42 L56 53 L67 34 L99 72 L77 59 L67 47 L56 66 L47 55 L35 70Z" fill="#173b25"/>
+<path d="M47 42 L56 53 L67 34 L76 48 L68 42 L56 62 L47 52 L36 66Z" fill="#173b25"/>
+</svg>
